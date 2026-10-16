@@ -1,0 +1,86 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum Team {
+    Mercedes = 0,
+    Ferrari = 1,
+    RedBull = 2,
+    Williams = 3,
+    AstonMartin = 4,
+    Alpine = 5,
+    RB = 6,
+    Haas = 7,
+    McLaren = 8,
+    Sauber = 9,
+    F1Generic = 41,
+    F1CustomTeam = 104,
+    ArtGP23 = 143,
+    Campos23 = 144,
+    Carlin23 = 145,
+    PHM23 = 146,
+    Dams23 = 147,
+    Hitech23 = 148,
+    MPMotorsport23 = 149,
+    Prema23 = 150,
+    Trident23 = 151,
+    VanAmersfoortRacing23 = 152,
+    Virtuosi23 = 153,
+}
+
+impl Team {
+    pub fn from_id(id: u8) -> Option<Self> {
+        match id {
+            0 => Some(Self::Mercedes),
+            1 => Some(Self::Ferrari),
+            2 => Some(Self::RedBull),
+            3 => Some(Self::Williams),
+            4 => Some(Self::AstonMartin),
+            5 => Some(Self::Alpine),
+            6 => Some(Self::RB),
+            7 => Some(Self::Haas),
+            8 => Some(Self::McLaren),
+            9 => Some(Self::Sauber),
+            41 => Some(Self::F1Generic),
+            104 => Some(Self::F1CustomTeam),
+            143 => Some(Self::ArtGP23),
+            144 => Some(Self::Campos23),
+            145 => Some(Self::Carlin23),
+            146 => Some(Self::PHM23),
+            147 => Some(Self::Dams23),
+            148 => Some(Self::Hitech23),
+            149 => Some(Self::MPMotorsport23),
+            150 => Some(Self::Prema23),
+            151 => Some(Self::Trident23),
+            152 => Some(Self::VanAmersfoortRacing23),
+            153 => Some(Self::Virtuosi23),
+            _ => None,
+        }
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::Mercedes => "Mercedes",
+            Self::Ferrari => "Ferrari",
+            Self::RedBull => "Red Bull Racing",
+            Self::Williams => "Williams",
+            Self::AstonMartin => "Aston Martin",
+            Self::Alpine => "Alpine",
+            Self::RB => "RB",
+            Self::Haas => "Haas",
+            Self::McLaren => "McLaren",
+            Self::Sauber => "Sauber",
+            Self::F1Generic => "F1 Generic",
+            Self::F1CustomTeam => "F1 Custom Team",
+            Self::ArtGP23 => "Art GP '23",
+            Self::Campos23 => "Campos '23",
+            Self::Carlin23 => "Carlin '23",
+            Self::PHM23 => "PHM '23",
+            Self::Dams23 => "Dams '23",
+            Self::Hitech23 => "Hitech '23",
+            Self::MPMotorsport23 => "MP Motorsport '23",
+            Self::Prema23 => "Prema '23",
+            Self::Trident23 => "Trident '23",
+            Self::VanAmersfoortRacing23 => "Van Amersfoort Racing '23",
+            Self::Virtuosi23 => "Virtuosi '23",
+        }
+    }
+} 

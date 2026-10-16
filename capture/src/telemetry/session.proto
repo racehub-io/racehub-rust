@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package telemetry;
+
+message SessionFrame {
+    string session_id = 1;
+    uint32 frame_id = 2;
+    uint32 session_time = 3;
+    uint32 session_time_left = 4;
+    uint32 session_duration = 5;
+    string track_name = 6;
+    string session_type = 7;
+    int32 air_temperature = 8;
+    int32 track_temperature = 9;
+}

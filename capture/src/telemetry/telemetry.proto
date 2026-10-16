@@ -1,0 +1,46 @@
+syntax = "proto3";
+
+package telemetry;
+
+message TelemetryFrame {
+    string session_id = 1;
+    uint32 frame_id = 2;
+    float session_time = 3;
+    uint32 car_index = 4;
+    float speed = 5;
+    float rpm = 6;
+    float throttle = 7;
+    float steer = 8;
+    float brake = 9;
+    float clutch = 10;
+    int32 gear = 11;
+    uint32 drs = 12;
+    uint32 brake_temperature_front_left = 13;
+    uint32 brake_temperature_front_right = 14;
+    uint32 brake_temperature_rear_left = 15;
+    uint32 brake_temperature_rear_right = 16;
+    uint32 tyre_surface_temperature_front_left = 17;
+    uint32 tyre_surface_temperature_front_right = 18;
+    uint32 tyre_surface_temperature_rear_left = 19;
+    uint32 tyre_surface_temperature_rear_right = 20;
+    uint32 tyre_carcass_temperature_front_left = 21;
+    uint32 tyre_carcass_temperature_front_right = 22;
+    uint32 tyre_carcass_temperature_rear_left = 23;
+    uint32 tyre_carcass_temperature_rear_right = 24;
+    float tyre_pressure_front_left = 25;
+    float tyre_pressure_front_right = 26;
+    float tyre_pressure_rear_left = 27;
+    float tyre_pressure_rear_right = 28;
+    uint32 engine_temperature = 29;
+    float world_position_x = 30;
+    float world_position_y = 31;
+    float world_position_z = 32;
+    float g_force_lateral = 33;
+    float g_force_longitudinal = 34;
+    float g_force_vertical = 35;
+    float yaw = 36;
+    float pitch = 37;
+    float roll = 38;
+    float lap_time = 39;
+    float lap_distance = 40;
+}
