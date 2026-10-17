@@ -56,25 +56,25 @@ impl TelemetryRecorder {
     }
     
     pub fn initialize(&mut self, session_id: u64) -> Result<(), RecorderError> {
-        // Create directory structure if it doesn't exist
+        self.finalize()?;
         let data_dir = "telemetry_data";
         fs::create_dir_all(data_dir)?;
         
         // Generate a filename based on date and session ID
         let now = Utc::now();
-        let timestamp = self.start_time.timestamp_millis() as u64;
+        let timestamp = now.timestamp_millis() as u64;
         let path = format!(
-            "{}/{}_session_{}.rhc",
+            "{}/{}_session_{}_{}.rhc",
             data_dir,
             timestamp,
-            session_id
+            session_id,
+            uuid::Uuid::new_v4()
         );
         
         // Open the file for writing
         let file = OpenOptions::new()
             .write(true)
-            .create(true)
-            .truncate(true)
+            .create_new(true)
             .open(&path)?;
         
         let mut writer = BufWriter::new(file);
@@ -147,7 +147,8 @@ impl TelemetryRecorder {
         if let Some(mut writer) = self.file.take() {
             // Ensure all data is written to disk
             writer.flush()?;
-            
+            writer.get_ref().sync_all()?;
+
             // Reset state
             self.file_path = None;
             self.session_id = None;
@@ -209,8 +210,7 @@ impl TelemetryReader {
         // Read version
         let version = reader.read_u8()?;
         if version != FORMAT_VERSION {
-            eprintln!("Warning: Reading telemetry file with version {}, current version is {}", 
-                     version, FORMAT_VERSION);
+            return Err(RecorderError::InvalidFormat);
         }
         
         // Read session ID and timestamp
@@ -242,25 +242,20 @@ impl TelemetryReader {
     }
     
     pub fn read_next_packet(&mut self) -> Result<Option<PacketInfo>, RecorderError> {
-        // Try to read packet header
-        let timestamp_us = match self.file.read_u64::<BigEndian>() {
-            Ok(ts) => ts,
-            Err(e) if e.kind() == io::ErrorKind::UnexpectedEof => return Ok(None),
-            Err(e) => return Err(e.into()),
-        };
-        
-        // Read packet type and data length
+        let mut timestamp = [0u8; 8];
+        if self.file.read(&mut timestamp[..1])? == 0 { return Ok(None); }
+        self.file.read_exact(&mut timestamp[1..])?;
+        let timestamp_us = u64::from_be_bytes(timestamp);
         let packet_type = self.file.read_u8()?;
         let data_len = self.file.read_u32::<BigEndian>()? as usize;
-        
-        // Read compressed data
+        if data_len == 0 || data_len > 1024 * 1024 { return Err(RecorderError::InvalidFormat); }
         let mut compressed_data = vec![0u8; data_len];
         self.file.read_exact(&mut compressed_data)?;
-        
-        // Decompress data
-        let data = zstd::decode_all(&compressed_data[..])
-            .map_err(|e| RecorderError::Compression(e.to_string()))?;
-        
+        let mut data = Vec::new();
+        zstd::stream::read::Decoder::new(compressed_data.as_slice())?
+            .take(65508).read_to_end(&mut data)?;
+        if data.is_empty() || data.len() > 65507 { return Err(RecorderError::InvalidFormat); }
+
         Ok(Some(PacketInfo {
             timestamp_us,
             packet_type,

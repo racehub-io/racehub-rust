@@ -298,6 +298,11 @@ impl TelemetryCapture {
         
         // Clean up resources
         drop(tx); // This will cause the processor task to exit
+
+        // Drain the queued packets before the files close.
+        if let Err(e) = processor.await {
+            eprintln!("Error waiting for processor task: {:?}", e);
+        }
         
         // Make sure database and recorder are properly flushed and closed
         if let Ok(mut db) = crate::db::DB.lock() {
@@ -312,12 +317,7 @@ impl TelemetryCapture {
             }
         }
         
-        // Wait for processor to finish
-        if let Err(e) = processor.await {
-            eprintln!("Error waiting for processor task: {:?}", e);
-        }
-        
         println!("Telemetry capture shutdown complete.");
         Ok(())
     }
-} 
+}

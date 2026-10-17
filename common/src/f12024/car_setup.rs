@@ -65,4 +65,4 @@ pub struct PacketCarSetupData {
 
 pub fn parse_car_setup_packet_internal(input: &[u8]) -> IResult<&[u8], PacketCarSetupData> {
     PacketCarSetupData::parse(input)
-} 
+}
