@@ -67,7 +67,7 @@ pub struct PacketSessionData {
     pub m_sliProNativeSupport: u8,
     #[nom(Parse = "le_u8")]
     pub m_numMarshalZones: u8,
-    #[nom(Count = "m_numMarshalZones")]
+    #[nom(Count = "21")]
     pub m_marshalZones: Vec<MarshalZone>,
     #[nom(Parse = "le_u8")]
     pub m_safetyCarStatus: u8,
@@ -75,7 +75,7 @@ pub struct PacketSessionData {
     pub m_networkGame: u8,
     #[nom(Parse = "le_u8")]
     pub m_numWeatherForecastSamples: u8,
-    #[nom(Count = "m_numWeatherForecastSamples")]
+    #[nom(Count = "64")]
     pub m_weatherForecastSamples: Vec<WeatherForecastSample>,
     #[nom(Parse = "le_u8")]
     pub m_forecastAccuracy: u8,

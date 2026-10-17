@@ -2,6 +2,8 @@ mod f12024;
 mod db;
 mod telemetry;
 mod recorder;
+pub mod native;
+pub mod protocols;
 
 use std::ffi::c_void;
 use std::panic::catch_unwind;

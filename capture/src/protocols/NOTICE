@@ -1,0 +1,19 @@
+iracing.proto comes from racehub-io/racehub-iracing-udp.
+The recorded contributors are Jony Bursztyn and Michael Sansoni.
+RaceHub applies CC0 only to rights it owns. See the repository LICENSING.md and LICENSES/CC0-1.0.txt.
+iRacing and its telemetry interface keep their own terms.
+
+rfactor2.proto comes from racehub-io/rfactor2-udp-broadcaster.
+Keep the MIT notice for Peter Gray in LICENSE.rfactor2.
+The rFactor 2 SDK is external. Its terms still apply.
+
+Protocol source:
+https://github.com/racehub-io/racehub-iracing-udp/blob/main/racehub_iracing_udp/iracing_message.proto
+https://github.com/racehub-io/rfactor2-udp-broadcaster/blob/main/rFactor2UdpBroadcaster/telemetry.proto
+
+Rust bindings are generated with prost-build 0.14.3 and protoc 33.4.
+The generation input marks scalar fields optional to preserve wire presence.
+Field numbers and wire types match the original schemas in schemas/.
+For iRacing, only the identified player receives player-only channel defaults.
+Other drivers keep those channels absent.
+Proto3 zero defaults in complete rFactor 2 telemetry messages keep their defined meaning.

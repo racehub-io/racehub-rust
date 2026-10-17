@@ -3,7 +3,7 @@ use common::f12024::car_status::{PacketCarStatusData, parse_car_status_packet_in
 
 pub fn parse_car_status(buf: &[u8]) -> Result<PacketCarStatusData, TelemetryError> {
     match parse_car_status_packet_internal(buf) {
-        Ok((_, packet)) => Ok(packet),
-        Err(_) => Err(TelemetryError::ParseError("Failed to parse car status packet")),
+        Ok(([], packet)) => Ok(packet),
+        _ => Err(TelemetryError::ParseError("Failed to parse car status packet")),
     }
 } 

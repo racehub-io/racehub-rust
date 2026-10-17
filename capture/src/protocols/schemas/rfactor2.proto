@@ -1,0 +1,349 @@
+syntax = "proto3";
+
+package rFactor2UdpBroadcaster;
+
+enum PacketType {
+    TELEMETRY = 0;
+    SCORING = 1;
+    GRAPHICS = 2;
+    PHYSICS = 3;
+}
+
+message PacketHeader {
+    PacketType PacketType = 1;
+    uint32 ContractVersion = 2;
+    uint32 EpochTime = 3;
+}
+
+message TelemetryVector3 {
+    double x = 1;
+    double y = 2;
+    double z = 3;
+}
+
+message TelemWheel {
+  double mSuspensionDeflection = 1;  // meters
+  double mRideHeight = 2;            // meters
+  double mSuspForce = 3;             // pushrod load in Newtons
+  double mBrakeTemp = 4;             // Celsius
+  double mBrakePressure = 5;         // currently 0.0-1.0, depending on driver input and brake balance; will convert to true brake pressure (kPa) in future
+
+  double mRotation = 6;              // radians/sec
+  double mLateralPatchVel = 7;       // lateral velocity at contact patch
+  double mLongitudinalPatchVel = 8;  // longitudinal velocity at contact patch
+  double mLateralGroundVel = 9;      // lateral velocity at contact patch
+  double mLongitudinalGroundVel = 10; // longitudinal velocity at contact patch
+  double mCamber = 11;                // radians (positive is left for left-side wheels, right for right-side wheels)
+  double mLateralForce = 12;          // Newtons
+  double mLongitudinalForce = 13;     // Newtons
+  double mTireLoad = 14;              // Newtons
+
+  double mGripFract = 15;             // an approximation of what fraction of the contact patch is sliding
+  double mPressure = 16;              // kPa (tire pressure)
+  repeated double mTemperature = 17;        // Kelvin (subtract 273.15 to get Celsius), left/center/right (not to be confused with inside/center/outside!)
+  double mWear = 18;                  // wear (0.0-1.0, fraction of maximum) ... this is not necessarily proportional with grip loss
+  string mTerrainName = 19;          // the material prefixes from the TDF file
+  uint32 mSurfaceType = 20;          // 0=dry, 1=wet, 2=grass, 3=dirt, 4=gravel, 5=rumblestrip, 6=special
+  bool mFlat = 21;                    // whether tire is flat
+  bool mDetached = 22;                // whether wheel is detached
+
+  double mVerticalTireDeflection = 23;// how much is tire deflected from its (speed-sensitive) radius
+  double mWheelYLocation = 24;        // wheel's y location relative to vehicle y location
+  double mToe = 25;                   // current toe angle w.r.t. the vehicle
+
+  double mTireCarcassTemperature = 26;       // rough average of temperature samples from carcass (Kelvin)
+  repeated double mTireInnerLayerTemperature = 27; // rough average of temperature samples from innermost layer of rubber (before carcass) (Kelvin)
+
+  repeated int32 mExpansion = 28;// for future use
+}
+
+message TelemInfo {
+    uint32 mID = 1;                      // slot ID (note that it can be re-used in multiplayer after someone leaves)
+    double mDeltaTime = 2;             // time since last update (seconds)
+    double mElapsedTime = 3;           // game session time
+    uint32 mLapNumber = 4;               // current lap number
+    double mLapStartET = 5;            // time this lap was started
+    string mVehicleName = 6;         // current vehicle name
+    string mTrackName= 7;           // current track name
+    TelemetryVector3 mPos = 8;               // world position in meters
+    TelemetryVector3 mLocalVel = 9;          // velocity (meters/sec) in local vehicle coordinates
+    TelemetryVector3 mLocalAccel = 10;        // acceleration (meters/sec^2) in local vehicle coordinates
+
+    // Orientation and derivatives
+    repeated TelemetryVector3 mOri = 11;            // rows of orientation matrix (use TelemQuat conversions if desired), also converts local
+                                    // vehicle vectors into world X, Y, or Z using dot product of rows 0, 1, or 2 respectively
+    TelemetryVector3 mLocalRot = 12;          // rotation (radians/sec) in local vehicle coordinates
+    TelemetryVector3 mLocalRotAccel = 13;     // rotational acceleration (radians/sec^2) in local vehicle coordinates
+
+    // Vehicle status
+    uint32 mGear = 14;                    // -1=reverse, 0=neutral, 1+=forward gears
+    double mEngineRPM = 15;             // engine RPM
+    double mEngineWaterTemp = 16;       // Celsius
+    double mEngineOilTemp = 17;         // Celsius
+    double mClutchRPM = 18;             // clutch RPM
+
+    // Driver input
+    double mUnfilteredThrottle = 19;    // ranges  0.0-1.0
+    double mUnfilteredBrake = 20;       // ranges  0.0-1.0
+    double mUnfilteredSteering = 21;    // ranges -1.0-1.0 (left to right)
+    double mUnfilteredClutch = 22;      // ranges  0.0-1.0
+
+    // Filtered input (various adjustments for rev or speed limiting, TC, ABS?, speed sensitive steering, clutch work for semi-automatic shifting, etc.)
+    double mFilteredThrottle = 23;      // ranges  0.0-1.0
+    double mFilteredBrake = 24;         // ranges  0.0-1.0
+    double mFilteredSteering = 25;      // ranges -1.0-1.0 (left to right)
+    double mFilteredClutch = 26;        // ranges  0.0-1.0
+
+    // Misc
+    double mSteeringShaftTorque = 27;   // torque around steering shaft (used to be mSteeringArmForce, but that is not necessarily accurate for feedback purposes)
+    double mFront3rdDeflection = 28;    // deflection at front 3rd spring
+    double mRear3rdDeflection = 29;     // deflection at rear 3rd spring
+
+    // Aerodynamics
+    double mFrontWingHeight = 30;       // front wing height
+    double mFrontRideHeight = 31;       // front ride height
+    double mRearRideHeight = 32;        // rear ride height
+    double mDrag = 33;                  // drag
+    double mFrontDownforce = 34;        // front downforce
+    double mRearDownforce = 35;         // rear downforce
+
+    // State/damage info
+    double mFuel = 36;                   // amount of fuel (liters)
+    double mEngineMaxRPM = 37;           // rev limit
+    uint32 mScheduledStops = 38;          // number of scheduled pitstops
+    bool  mOverheating = 39;             // whether overheating icon is shown
+    bool  mDetached = 40;                // whether any parts (besides wheels) have been detached
+    bool  mHeadlights = 41;              // whether headlights are on
+    repeated uint32 mDentSeverity = 42;   // dent severity at 8 locations around the car (0=none, 1=some, 2=more)
+    double mLastImpactET = 43;           // time of last impact
+    double mLastImpactMagnitude = 44;    // magnitude of last impact
+    TelemetryVector3 mLastImpactPos = 45;// location of last impact
+
+    // Expanded
+    double mEngineTorque = 46;          // current engine torque (including additive torque) (used to be mEngineTq, but there's little reason to abbreviate it)
+    uint32 mCurrentSector = 47;           // the current sector (zero-based) with the pitlane stored in the sign bit (example: entering pits from third sector gives 0x80000002)
+    uint32 mSpeedLimiter = 48;             // whether speed limiter is on
+    uint32 mMaxGears = 49;                 // maximum forward gears
+    uint32 mFrontTireCompoundIndex = 50;   // index within brand
+    uint32 mRearTireCompoundIndex = 51;    // index within brand
+    double mFuelCapacity = 52;          // capacity in liters
+    uint32 mFrontFlapActivated = 53;       // whether front flap is activated
+    uint32 mRearFlapActivated = 54;        // whether rear flap is activated
+    uint32 mRearFlapLegalStatus = 55;      // 0=disallowed, 1=criteria detected but not allowed quite yet, 2=allowed
+    uint32 mIgnitionStarter = 56;          // 0=off 1=ignition 2=ignition+starter
+
+    string mFrontTireCompoundName = 57;         // name of front tire compound
+    string mRearTireCompoundName = 58;          // name of rear tire compound
+
+    uint32 mSpeedLimiterAvailable = 59;    // whether speed limiter is available
+    uint32 mAntiStallActivated = 60;       // whether (hard) anti-stall is activated
+    repeated int32 mUnused = 61;                 //
+    float mVisualSteeringWheelRange = 62;         // the *visual* steering wheel range
+
+    double mRearBrakeBias = 63;                   // fraction of brakes on rear
+    double mTurboBoostPressure = 64;              // current turbo boost pressure if available
+    repeated float mPhysicsToGraphicsOffset = 65;       // offset from static CG to graphical center
+    float mPhysicalSteeringWheelRange = 66;       // the *physical* steering wheel range
+
+    // Future use
+    repeated int32 mExpansion = 67; // for future use (note that the slot ID has been moved to mID above)
+
+    // keeping this at the end of the structure to make it easier to replace in future versions
+    repeated TelemWheel mWheel = 68;       // wheel info (front left, front right, rear left, rear right)
+}
+
+
+message VehicleScoringInfo {
+  uint32 mID = 1;                      // slot ID (note that it can be re-used in multiplayer after someone leaves)
+  string mDriverName = 2;          // driver name
+  string mVehicleName = 3;         // vehicle name
+  uint32 mTotalLaps = 4;              // laps completed
+  uint32 mSector = 5;           // 0=sector3, 1=sector1, 2=sector2 (don't ask why)
+  uint32 mFinishStatus = 6;     // 0=none, 1=finished, 2=dnf, 3=dq
+  double mLapDist = 7;               // current distance around track
+  double mPathLateral = 8;           // lateral position with respect to *very approximate* "center" path
+  double mTrackEdge = 9;             // track edge (w.r.t. "center" path) on same side of track as vehicle
+
+  double mBestSector1 = 10;           // best sector 1
+  double mBestSector2 = 11;           // best sector 2 (plus sector 1)
+  double mBestLapTime = 12;           // best lap time
+  double mLastSector1 = 13;           // last sector 1
+  double mLastSector2 = 14;           // last sector 2 (plus sector 1)
+  double mLastLapTime = 15;           // last lap time
+  double mCurSector1 = 16;            // current sector 1 if valid
+  double mCurSector2 = 17;            // current sector 2 (plus sector 1) if valid
+  // no current laptime because it instantly becomes "last"
+
+  uint32 mNumPitstops = 18;            // number of pitstops made
+  uint32 mNumPenalties = 19;           // number of outstanding penalties
+  bool mIsPlayer = 20;                // is this the player's vehicle
+
+  int32 mControl = 21;          // who's in control: -1=nobody (shouldn't get this), 0=local player, 1=local AI, 2=remote, 3=replay (shouldn't get this)
+  bool mInPits = 22;                  // between pit entrance and pit exit (not always accurate for remote vehicles)
+  uint32 mPlace = 23;          // 1-based position
+  string mVehicleClass = 24;        // vehicle class
+
+  // Dash Indicators
+  double mTimeBehindNext = 25;        // time behind vehicle in next higher place
+  int32 mLapsBehindNext = 26;          // laps behind vehicle in next higher place
+  double mTimeBehindLeader = 27;      // time behind leader
+  int32 mLapsBehindLeader = 28;        // laps behind leader
+  double mLapStartET = 29;            // time this lap was started
+
+  // Position and derivatives
+  TelemetryVector3 mPos = 30;               // world position in meters
+  TelemetryVector3 mLocalVel = 31;          // velocity (meters/sec) in local vehicle coordinates
+  TelemetryVector3 mLocalAccel = 32;        // acceleration (meters/sec^2) in local vehicle coordinates
+
+  // Orientation and derivatives
+  repeated TelemetryVector3 mOri = 33;            // rows of orientation matrix (use TelemQuat conversions if desired), also converts local
+                                 // vehicle vectors into world X, Y, or Z using dot product of rows 0, 1, or 2 respectively
+  TelemetryVector3 mLocalRot = 34;          // rotation (radians/sec) in local vehicle coordinates
+  TelemetryVector3 mLocalRotAccel = 35;     // rotational acceleration (radians/sec^2) in local vehicle coordinates
+
+  // tag.2012.03.01 - stopped casting some of these so variables now have names and mExpansion has shrunk, overall size and old data locations should be same
+  uint32 mHeadlights = 36;     // status of headlights
+  uint32 mPitState = 37;       // 0=none, 1=request, 2=entering, 3=stopped, 4=exiting
+  uint32 mServerScored = 38;   // whether this vehicle is being scored by server (could be off in qualifying or racing heats)
+  uint32 mIndividualPhase = 39;// game phases (described below) plus 9=after formation, 10=under yellow, 11=under blue (not used)
+
+  int32 mQualification = 40;           // 1-based, can be -1 when invalid
+
+  double mTimeIntoLap = 41;           // estimated time into lap
+  double mEstimatedLapTime = 42;      // estimated laptime used for 'time behind' and 'time into lap' (note: this may changed based on vehicle and setup!?)
+
+  string mPitGroup = 43;            // pit group (same as team name unless pit is shared)
+  int32 mFlag = 44;           // primary flag being shown to vehicle (currently only 0=green or 6=blue)
+  bool mUnderYellow = 45;             // whether this car has taken a full-course caution flag at the start/finish line
+  int32 mCountLapFlag = 46;   // 0 = do not count lap or time, 1 = count lap but not time, 2 = count lap and time
+  bool mInGarageStall = 47;           // appears to be within the correct garage stall
+
+  repeated int32 mUpgradePack = 48;  // Coded upgrades
+
+  // Future use
+  // tag.2012.04.06 - SEE ABOVE!
+  int32 mExpansion = 49;  // for future use
+};
+
+message ScoringInfo {
+    string mTrackName = 1;           // current track name
+    uint32 mSession = 2;                 // current session (0=testday 1-4=practice 5-8=qual 9=warmup 10-13=race)
+    double mCurrentET = 3;             // current time
+    double mEndET = 4;                 // ending time
+    uint32  mMaxLaps = 5;                // maximum laps
+    double mLapDist = 6;               // distance around track
+    string mResultsStream = 7;          // results stream additions since last update (newline-delimited and NULL-terminated)
+
+    uint32 mNumVehicles = 8;             // current number of vehicles
+    
+    // Game phases:
+    // 0 Before session has begun
+    // 1 Reconnaissance laps (race only)
+    // 2 Grid walk-through (race only)
+    // 3 Formation lap (race only)
+    // 4 Starting-light countdown has begun (race only)
+    // 5 Green flag
+    // 6 Full course yellow / safety car
+    // 7 Session stopped
+    // 8 Session over
+    uint32 mGamePhase = 9;   
+
+    // Yellow flag states (applies to full-course only)
+    // -1 Invalid
+    //  0 None
+    //  1 Pending
+    //  2 Pits closed
+    //  3 Pit lead lap
+    //  4 Pits open
+    //  5 Last lap
+    //  6 Resume
+    //  7 Race halt (not currently used)
+    int32 mYellowFlagState = 10;
+
+    repeated int32 mSectorFlag = 11;      // whether there are any local yellows at the moment in each sector (not sure if sector 0 is first or last, so test)
+    int32 mStartLight = 12;       // start light frame (number depends on track)
+    int32 mNumRedLights = 13;     // number of red lights in start sequence
+    bool mInRealtime = 14;                // in realtime as opposed to at the monitor
+    string mPlayerName = 15;            // player name (including possible multiplayer override)
+    string mPlrFileName = 16;           // may be encoded to be a legal filename
+
+    // weather
+    double mDarkCloud = 17;               // cloud darkness? 0.0-1.0
+    double mRaining = 18;                 // raining severity 0.0-1.0
+    double mAmbientTemp = 19;             // temperature (Celsius)
+    double mTrackTemp = 20;               // temperature (Celsius)
+    TelemetryVector3 mWind = 21;                // wind speed
+    double mMinPathWetness = 22;          // minimum wetness on main path 0.0-1.0
+    double mMaxPathWetness = 23;          // maximum wetness on main path 0.0-1.0
+
+    // Future use
+    repeated int32 mExpansion = 24;
+
+    // keeping this at the end of the structure to make it easier to replace in future versions
+    repeated VehicleScoringInfo mVehicle = 25; // array of vehicle scoring info's
+}
+
+message GraphicsInfo {
+    TelemetryVector3 mCamPos = 1;            // camera position
+    repeated TelemetryVector3 mCamOri = 2;         // rows of orientation matrix (use TelemQuat conversions if desired), also converts local
+
+    double mAmbientRed = 3;
+    double mAmbientGreen = 4;
+    double mAmbientBlue = 5;
+    int32 mID = 6;                      // slot ID being viewed (-1 if invalid)
+
+  // Camera types (some of these may only be used for *setting* the camera type in WantsToViewVehicle())
+  //    0  = TV cockpit
+  //    1  = cockpit
+  //    2  = nosecam
+  //    3  = swingman
+  //    4  = trackside (nearest)
+  //    5  = onboard000
+  // 1004  = onboard999
+  // 1005+ = (currently unsupported, in the future may be able to set/get specific trackside camera)
+  uint32 mCameraType = 7;              // see above comments for possible values
+
+  repeated int32 mExpansion = 8; // for future use (possibly camera name)
+}
+
+message PhysicsInfo {
+    uint32 mTractionControl = 1;  // 0 (off) - 3 (high)
+    uint32 mAntiLockBrakes = 2;   // 0 (off) - 2 (high)
+    uint32 mStabilityControl = 3; // 0 (off) - 2 (high)
+    uint32 mAutoShift = 4;        // 0 (off), 1 (upshifts), 2 (downshifts), 3 (all)
+    uint32 mAutoClutch = 5;       // 0 (off), 1 (on)
+    uint32 mInvulnerable = 6;     // 0 (off), 1 (on)
+    uint32 mOppositeLock = 7;     // 0 (off), 1 (on)
+    uint32 mSteeringHelp = 8;     // 0 (off) - 3 (high)
+    uint32 mBrakingHelp = 9;      // 0 (off) - 2 (high)
+    uint32 mSpinRecovery = 10;     // 0 (off), 1 (on)
+    uint32 mAutoPit = 11;          // 0 (off), 1 (on)
+    uint32 mAutoLift = 12;         // 0 (off), 1 (on)
+    uint32 mAutoBlip = 13;         // 0 (off), 1 (on)
+    
+    uint32 mFuelMult = 14;         // fuel multiplier (0x-7x)
+    uint32 mTireMult = 15;         // tire wear multiplier (0x-7x)
+    uint32 mMechFail = 16;         // mechanical failure setting; 0 (off), 1 (normal), 2 (timescaled)
+    uint32 mAllowPitcrewPush = 17; // 0 (off), 1 (on)
+    uint32 mRepeatShifts = 18;     // accidental repeat shift prevention (0-5; see PLR file)
+    uint32 mHoldClutch = 19;       // for auto-shifters at start of race: 0 (off), 1 (on)
+    uint32 mAutoReverse = 20;      // 0 (off), 1 (on)
+    uint32 mAlternateNeutral = 21; // Whether shifting up and down simultaneously equals neutral
+    
+    uint32 mAIControl = 22;        // Whether player vehicle is currently under AI control
+    uint32 mUnused1 = 23;          //
+    uint32 mUnused2 = 24;          //
+
+    float mManualShiftOverrideTime = 25;  // time before auto-shifting can resume after recent manual shift
+    float mAutoShiftOverrideTime = 26;    // time before manual shifting can resume after recent auto shift
+    float mSpeedSensitiveSteering = 27;   // 0.0 (off) - 1.0
+    float mSteerRatioSpeed = 28;          // speed (m/s) under which lock gets expanded to full
+}
+
+message DataPacket {
+    PacketHeader PacketHeader = 1;  // The header of the packet, sent in every packet
+    TelemInfo Telemetry = 2;        // The telemetry data
+    ScoringInfo Scoring = 3;        // The scoring data
+    GraphicsInfo Graphics = 4;      // The graphics data
+    PhysicsInfo Physics = 5;        // The physics data
+}

@@ -1,12 +1,9 @@
 import zstandard as zstd
 import json
 import pandas as pd
-import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
 from pathlib import Path
 import argparse
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict
 
 PACKET_TYPES = {
     0: "CarMotion",
@@ -16,13 +13,14 @@ PACKET_TYPES = {
     4: "Participants",
     5: "CarSetup",
     6: "CarTelemetry",
-    7: "CarDamage",
+    7: "CarStatus",
     8: "FinalClassification",
     9: "LobbyInfo",
-    10: "SessionHistory",
-    11: "TyreSets",
-    12: "CarMotionEx",
-    13: "TimeTrial",
+    10: "CarDamage",
+    11: "SessionHistory",
+    12: "TyreSets",
+    13: "CarMotionEx",
+    14: "TimeTrial",
 }
 
 
@@ -33,7 +31,6 @@ class TelemetryConverter:
         self.output_dir.mkdir(exist_ok=True, parents=True)
         self.partition_size = partition_size
 
-        # Packet type specific handlers
         self.packet_handlers = {
             0: self._handle_car_motion,
             1: self._handle_session,
@@ -43,9 +40,9 @@ class TelemetryConverter:
             5: self._handle_car_setup,
             6: self._handle_car_telemetry,
             7: self._handle_car_status,
-            8: self._handle_car_damage,
-            9: self._handle_final_classification,
-            10: self._handle_lobby_info,
+            8: self._handle_final_classification,
+            9: self._handle_lobby_info,
+            10: self._handle_car_damage,
             11: self._handle_session_history,
             12: self._handle_tyre_sets,
             13: self._handle_car_motion_ex,
@@ -95,8 +92,6 @@ class TelemetryConverter:
             }
 
             packet_name = PACKET_TYPES.get(packet["packet_type"], "")
-            if packet_name == "CarMotionEx":
-                print(packet)
             packet_data = packet["data"][packet_name]
 
             # Process packet based on its type
@@ -173,49 +168,49 @@ class TelemetryConverter:
                 car_record[f"car_{key}"] = value
 
             # Add additional fields that might be present at packet level
-            if "m_suspensionPosition" in data:
+            if "m_suspensionPosition" in packet_data:
                 car_record["suspension_position"] = (
                     packet_data["m_suspensionPosition"][car_idx]
                     if car_idx < len(packet_data["m_suspensionPosition"])
                     else None
                 )
-            if "m_suspensionVelocity" in data:
+            if "m_suspensionVelocity" in packet_data:
                 car_record["suspension_velocity"] = (
                     packet_data["m_suspensionVelocity"][car_idx]
                     if car_idx < len(packet_data["m_suspensionVelocity"])
                     else None
                 )
-            if "m_suspensionAcceleration" in data:
+            if "m_suspensionAcceleration" in packet_data:
                 car_record["suspension_acceleration"] = (
                     packet_data["m_suspensionAcceleration"][car_idx]
                     if car_idx < len(packet_data["m_suspensionAcceleration"])
                     else None
                 )
-            if "m_wheelSpeed" in data:
+            if "m_wheelSpeed" in packet_data:
                 car_record["wheel_speed"] = (
                     packet_data["m_wheelSpeed"][car_idx]
                     if car_idx < len(packet_data["m_wheelSpeed"])
                     else None
                 )
-            if "m_wheelSlip" in data:
+            if "m_wheelSlip" in packet_data:
                 car_record["wheel_slip"] = (
                     packet_data["m_wheelSlip"][car_idx]
                     if car_idx < len(packet_data["m_wheelSlip"])
                     else None
                 )
-            if "m_localVelocityX" in data:
+            if "m_localVelocityX" in packet_data:
                 car_record["local_velocity_x"] = (
                     packet_data["m_localVelocityX"][car_idx]
                     if car_idx < len(packet_data["m_localVelocityX"])
                     else None
                 )
-            if "m_localVelocityY" in data:
+            if "m_localVelocityY" in packet_data:
                 car_record["local_velocity_y"] = (
                     packet_data["m_localVelocityY"][car_idx]
                     if car_idx < len(packet_data["m_localVelocityY"])
                     else None
                 )
-            if "m_localVelocityZ" in data:
+            if "m_localVelocityZ" in packet_data:
                 car_record["local_velocity_z"] = (
                     packet_data["m_localVelocityZ"][car_idx]
                     if car_idx < len(packet_data["m_localVelocityZ"])
@@ -301,10 +296,10 @@ class TelemetryConverter:
                 car_record[f"lap_{key}"] = value
 
             # Add additional fields
-            if "m_timeTrialPBCarIdx" in data:
-                car_record["time_trial_pb_car_idx"] = data["m_timeTrialPBCarIdx"]
-            if "m_timeTrialRivalCarIdx" in data:
-                car_record["time_trial_rival_car_idx"] = data["m_timeTrialRivalCarIdx"]
+            if "m_timeTrialPBCarIdx" in packet_data:
+                car_record["time_trial_pb_car_idx"] = packet_data["m_timeTrialPBCarIdx"]
+            if "m_timeTrialRivalCarIdx" in packet_data:
+                car_record["time_trial_rival_car_idx"] = packet_data["m_timeTrialRivalCarIdx"]
 
             # Add to buffer
             self.data_buffers[2].append(car_record)

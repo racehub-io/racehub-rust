@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+message Car {
+  int32 CarIdx = 1;
+  float Brake = 2;
+  float Clutch = 3;
+  float RPM = 4;
+  int32 Gear = 5;
+  int32 Lap = 6;
+  float LapDistancePct = 7;
+  float Speed = 8;
+  float Steer = 9;
+  float Throttle = 10;
+  float LapTime = 11;
+}
+
+message SessionInfo {
+  float AirDensity = 1;
+  float AirPressure = 2;
+  float AirTemperature = 3;
+  float TrackTemperature = 4;
+  float TrackWetness = 5;
+  string TrackName = 6;
+  int32 TrackLength = 7;
+  string EventType = 8;
+  string Category = 9;
+  double SessionTime = 10;
+  int32 SessionID = 11;
+}
+
+message Participant {
+  int32 ParticipantIdx = 1;
+  string DriverName = 2;
+  string Abbreviation = 3;
+  int32 CarNumber = 4;
+  string TeamName = 5;
+}
+
+message TelemetryPacket {
+  repeated Car Cars = 1;
+  repeated Participant Participants = 2;
+  SessionInfo SessionInfo = 3;
+}
+
